@@ -3,6 +3,7 @@
 library(lubridate)
 library(dplyr)
 library(data.table)
+library(tibble)
 
 start_date <- as.Date('2020-01-22')
 results <- data.frame()
@@ -53,23 +54,42 @@ three <- read.csv('./CovidData/data3.csv', sep='')
 four <- read.csv('./CovidData/data4.csv', sep='')
 
 
-results <- data.frame()
-
-dataNames1 <- c('Province.State', 'Country.Region', 'Last.Update', 'Confirmed', 'Deaths', 'Recovered' )
-dataNames2 <- c('Province.State', 'Country.Region', 'Last.Update', 'Confirmed', 'Deaths', 'Recovered', 'Latitude', 'Longitude')
-dataNames3 <- c('FIPS', 'Admin2', 'Province.State', 'Country.Region', 'Last.Update', 'Latitude', 'Longitude', 'Confirmed', 'Deaths', 'Recovered', 'Active', 'Combined.Key')
-dataNames4 <- c('FIPS', 'Admin2', 'Province.State', 'Country.Region', 'Last.Update', 'Latitude', 'Longitude', 'Confirmed', 'Deaths', 'Recovered', 'Active', 'Combined.Key', 'Incident.Rate', 'Case.Fatality_Ratio')
-
-temp1 <- data.frame()
-temp1 <- cbind(temp1$fips, temp1$Admin2, one[1,], one[2,] )
+one <- one %>% add_column(FIPS = NA, Admin2 = NA, Latitude = NA, Longitude = NA, Active = NA, Combined.Key = NA,  Incident.Rate = NA, Case.Fatality_Ratio = NA)
+one <- one[, c('FIPS', 'Admin2', 'Province.State', 'Country.Region', 'Last.Update', 'Latitude', 'Longitude', 'Confirmed', 'Deaths', 'Recovered', 'Active', 'Combined.Key', 'Incident.Rate', 'Case.Fatality_Ratio')]
+two <- two %>% add_column(FIPS = NA, Admin2 = NA, Active = NA, Combined.Key = NA,  Incident.Rate = NA, Case.Fatality_Ratio = NA)
+two <- two[, c('FIPS', 'Admin2', 'Province.State', 'Country.Region', 'Last.Update', 'Latitude', 'Longitude', 'Confirmed', 'Deaths', 'Recovered', 'Active', 'Combined.Key', 'Incident.Rate', 'Case.Fatality_Ratio')]
+three <- three %>% add_column(Incident.Rate = NA, Case.Fatality_Ratio = NA)
+three <- three[, c('FIPS', 'Admin2', 'Province.State', 'Country.Region', 'Last.Update', 'Latitude', 'Longitude', 'Confirmed', 'Deaths', 'Recovered', 'Active', 'Combined.Key', 'Incident.Rate', 'Case.Fatality_Ratio')]
 
 
+CovidData <- rbind(one, two, three, four)
 
-temp3 <- cbind(three, three$Incident.Rate, three$Case.Fatality)
+library(RODBC)
 
+connectionString <-  "Driver={SQL Server};
+                      Server=PERTELL01,1433;
+                      Database=Covid;
+                      Integrated Security=SSPI;"
 
+myConn <- odbcDriverConnect(connectionString)
 
+sqlSave(myConn, CovidData, "CovidData", append = TRUE, rownames = FALSE)
+close(myConn)
 # Extra stuff
+
+KenoshaData <- filter(CovidData, Province.State == 'Wisconsin'& Last.Update %like% '2020-10-16')
+sum(KenoshaData$Confirmed)
+
+
+latestData <- filter(CovidData, Country.Region == 'US' & Last.Update %like% '2020-10-16')
+
+allData <- latestData %>%
+  group_by(Province.State) %>%
+  summarize_at(vars(Confirmed), list(name = sum))
+
+View(allData)
+
+
 KenoshaData <- filter(data4, Province.State == 'Wisconsin' & Last.Update %like% '2020-10-16')
 
 table(KenoshaData)
