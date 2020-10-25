@@ -84,10 +84,14 @@ allData <- allData[,c(1:4, 6:15)]
 names(allData)[5] <- 'Last.Update'
 
 # Add to local database. Changing to Azure later
-connectionString <-  "Driver={SQL Server};
-                      Server=PERTELL01,1433;
-                      Database=Covid;
-                      Integrated Security=SSPI;"
+connectionString <-  "Driver={ODBC Driver 13 for SQL Server};
+                      Server=<<Your Server>>;
+                      Database=<<Your Database>>;
+                      Uid=<<Your Login>>;
+                      Pwd=<<Your Password>>;
+                      Encrypt=yes;
+                      TrustServerCertificate=no;
+                      Connection Timeout=30;"
 
 myConn <- odbcDriverConnect(connectionString)
 
