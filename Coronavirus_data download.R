@@ -50,10 +50,10 @@ write.table(data3, file = './CovidData/data3.csv')
 write.table(data4, file = './CovidData/data4.csv')
 
 # Read saved data
-#data1 <- read.csv('./CovidData/data1.csv', sep='', stringsAsFactors = FALSE)
-#data2 <- read.csv('./CovidData/data2.csv', sep='', stringsAsFactors = FALSE)
-#data3 <- read.csv('./CovidData/data3.csv', sep='', stringsAsFactors = FALSE)
-#data4 <- read.csv('./CovidData/data4.csv', sep='', stringsAsFactors = FALSE)
+data1 <- read.csv('./CovidData/data1.csv', sep='', stringsAsFactors = FALSE)
+data2 <- read.csv('./CovidData/data2.csv', sep='', stringsAsFactors = FALSE)
+data3 <- read.csv('./CovidData/data3.csv', sep='', stringsAsFactors = FALSE)
+data4 <- read.csv('./CovidData/data4.csv', sep='', stringsAsFactors = FALSE)
 # End write/read .csv files
 
 # This block ensures that the number of columns is consistent and in the same order before combining
@@ -69,8 +69,7 @@ data4 <- data4[, c('FIPS', 'Admin2', 'Province.State', 'Country.Region', 'Last.U
 CovidData <- rbind(data1, data2, data3, data4)
 
 # Convert Last.Updated to a date field
-# CovidData$Updated <- strptime(CovidData$Last.Update, "%Y-%m-%d")
-
+CovidData$Updated <- strptime(CovidData$Last.Update, "%Y-%m-%d")
 CovidData$Updated <-as.POSIXct(CovidData$Updated)
 
 tempNA <- filter(CovidData, is.na(Updated) == TRUE)
@@ -83,7 +82,13 @@ allData <- rbind(tempNA, tempNotNA)
 allData <- allData[,c(1:4, 6:15)]
 names(allData)[5] <- 'Last.Update'
 
-# Add to local database. Changing to Azure later
+# Add to local database
+# connectionString <-  "Driver= {SQL Server};
+#                      Server=<<Your Server>>;
+#                      Database=<<Your Database>>;
+#                      Trusted Connection = TRUE;"
+
+# Add to Azure database.
 connectionString <-  "Driver={ODBC Driver 13 for SQL Server};
                       Server=<<Your Server>>;
                       Database=<<Your Database>>;
@@ -92,7 +97,6 @@ connectionString <-  "Driver={ODBC Driver 13 for SQL Server};
                       Encrypt=yes;
                       TrustServerCertificate=no;
                       Connection Timeout=30;"
-
 myConn <- odbcDriverConnect(connectionString)
 
 sqlSave(myConn, allData, "CovidData", append = TRUE, rownames = FALSE)
@@ -101,6 +105,10 @@ close(myConn)
 
 
 # Extra stuff
+
+sum(is.na(CovidData$Last.Update))
+sum(is.na(CovidData$Updated))
+sum(is.na(allData$Last.Update))
 
 KenoshaData <- filter(CovidData, Province.State == 'Wisconsin'& Last.Update %like% '2020-10-16')
 sum(KenoshaData$Confirmed)
